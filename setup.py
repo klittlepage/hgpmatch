@@ -9,7 +9,7 @@ setuptools.setup(
     name='hgpmatch',
     author='Kelly Littlepage',
     author_email='kelly@klittlepage.com',
-    description='A CSV driven solver for the resident/hospital style '
+    description='A CSV driven solver for resident/hospital style '
                 'matching markets',
     long_description=long_description,
     long_description_content_type='text/markdown',
