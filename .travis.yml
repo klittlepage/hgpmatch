@@ -5,13 +5,21 @@ cache:
   directories:
     - "$HOME/.cache/pip"
     - "$HOME/.pyenv"
+env:
+  global:
+    secure: mfxteqXpJmz+Vm9CM9ib/ObjmvesFp5LA6ms5bjFCebjQDapPOQ1k3JIFc1+O8UE7lZYaTB265ZyO7bfsoRSOC+NuSGvpHYo2ebV3I1D725M4SaNRMh0F8HZmmqe2jyvcSHS+8flrodOAzZmBwBYx9GAzq8YnCIYSfAG/2yKDx54ozVQ6PTJu+8rKCjcU1KemXshyhSPC9hz/rHviz/i65NwpmXD8Ffrk8diCeIFDReUZIHpnoLMfRRDJOWo+qIMSEvq5R562xAzmqEzWa3Op5owr/1H2Sloa0+1cEgPA/854mtHNTPslaDvOiMItyBECrQsUCB3sgDW7Z53Oeg41SolmC9lhzWWPcB0eETjAc3u5K18Zr1Tu4O2iLs7bkuAxhXp2b+aoVx+Laqly2O3XEM27Cmteyv7teqWc47I22H/MeT8dBQ/u08hkTbaklKCkhUzZDEsPRaoYbZnQbhGScCUSVwXzxnLqU0P77ka2T9K7lBp8NwXh/NfBR3gmAYJ0U6kUE1BrYrN5GYX+5Ch174Cy4fV2X+f/2Z+YubbxvvcqMdkBEBNUcmLt8WT3x/076P5n9NpKClK3eRwueHBdJbQ6LjUas7xT877kYXSKMh00noyIqtZzmBp+NxHOkwZvlRixQ6c6G1C+vix9ludKmNFB0S8QwXgZyxDEJD8+LY=
 jobs:
   include:
     - python: "3.7"
     - python: "3.8"
       env:
         - BUILD_DOCS=true
+        - CODE_CLIMATE=true
         - DEPLOY_PYPI=true
+      before_script:
+        - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+        - chmod +x ./cc-test-reporter
+        - ./cc-test-reporter before-build
     - os: windows
       language: shell
       env:
@@ -33,6 +41,11 @@ script:
     coverage run --source=hgp --omit="**/__main__.py" -m pytest tests && \
     coveralls
   - |
+    if [[ -n "$CODE_CLIMATE" ]]; then
+      coverage xml && \
+      ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT;
+    fi
+  - |
     if [[ -n "$BUILD_DOCS" ]]; then
       make -C docs doctest && \
       make -C docs linkcheck && \
@@ -40,14 +53,17 @@ script:
     fi
 deploy:
   provider: pypi
-  username: "__token__"
+  username: __token__
   password:
-    secure: "Ljvtl2KpZc9FHlmwjdIbNX5WO4HHFnTsWd9/a3pTQY3X/+TY1ood0M2JdJKGR36tqDtwU2Nr76oZfrTbLLurkJDRG5lm2pxD7T3/8dZdxXaEWMPORbgYWSzOqt/eHjF588PFhVyXENj+0HaLjhvUOavzU1b2zXgBFY60U5ZuLO/gwzQZEDY0Dc/JtGxEoczekTW+qG49Zk/7M5wzLA+XMllThhq+qda646D9+FMu3ob3Z8szXYTgmlcNUxaHKCWzjuSaOSk2NbyBC7+0webpoyHlK2j95T2vB65qzO3wzdscZ2wJiahu5udt5MFVAVisb8bP8XLrAU0x+5pygM/nUFE6GgrXcyW1fQxGJDEOr77guNx1sBX/gQ7TBzCLl9C0++0u95M59ZT2SMdF6YZLvxH+9AjXSQx7L4NXQQDm2xxCl6OFCZmk4cdhb/KpyLwIhr8vrBv0TPv8ohEImJe9LO9n3gZ7BVJrOs1XJeQMLm+XIdFd+8ySSSxT3wggQAEnkUDZ9UF/unbcS7aRxLFBQUE9Va2UCUPTsUB02ZuLJiOSAqAAIMl+bmwZ31dTHPs3P4kLDmcg+/p5zIFhh7vlP/8XM3VFSrFQh0GShlbXBTac0lPFM9rLPgx1cXT8irSsslDlFf82Fs4H7PCYcn8+l9+AQQ4KNrb5yXvuxg72CN8="
+    secure: Ljvtl2KpZc9FHlmwjdIbNX5WO4HHFnTsWd9/a3pTQY3X/+TY1ood0M2JdJKGR36tqDtwU2Nr76oZfrTbLLurkJDRG5lm2pxD7T3/8dZdxXaEWMPORbgYWSzOqt/eHjF588PFhVyXENj+0HaLjhvUOavzU1b2zXgBFY60U5ZuLO/gwzQZEDY0Dc/JtGxEoczekTW+qG49Zk/7M5wzLA+XMllThhq+qda646D9+FMu3ob3Z8szXYTgmlcNUxaHKCWzjuSaOSk2NbyBC7+0webpoyHlK2j95T2vB65qzO3wzdscZ2wJiahu5udt5MFVAVisb8bP8XLrAU0x+5pygM/nUFE6GgrXcyW1fQxGJDEOr77guNx1sBX/gQ7TBzCLl9C0++0u95M59ZT2SMdF6YZLvxH+9AjXSQx7L4NXQQDm2xxCl6OFCZmk4cdhb/KpyLwIhr8vrBv0TPv8ohEImJe9LO9n3gZ7BVJrOs1XJeQMLm+XIdFd+8ySSSxT3wggQAEnkUDZ9UF/unbcS7aRxLFBQUE9Va2UCUPTsUB02ZuLJiOSAqAAIMl+bmwZ31dTHPs3P4kLDmcg+/p5zIFhh7vlP/8XM3VFSrFQh0GShlbXBTac0lPFM9rLPgx1cXT8irSsslDlFf82Fs4H7PCYcn8+l9+AQQ4KNrb5yXvuxg72CN8=
   on:
     repo: klittlepage/hgpmatch
     tags: true
     branch: master
-    condition: $DEPLOY_PYPI
+    condition: "$DEPLOY_PYPI"
   cleanup: false
   skip_existing: true
-  distributions: "sdist bdist_wheel"
+  distributions: sdist bdist_wheel
+branches:
+  except:
+    - /.*(.tmp)$/
