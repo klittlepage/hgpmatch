@@ -47,7 +47,7 @@ deploy:
     repo: klittlepage/hgpmatch
     tags: true
     branch: master
-    condition: env(DEPLOY_PYPI) IS present
+    condition: $DEPLOY_PYPI
   cleanup: false
   skip_existing: true
   distributions: "sdist bdist_wheel"
