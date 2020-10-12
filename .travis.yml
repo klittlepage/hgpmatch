@@ -1,0 +1,53 @@
+dist: xenial
+os: linux
+language: python
+cache:
+  directories:
+    - "$HOME/.cache/pip"
+    - "$HOME/.pyenv"
+jobs:
+  include:
+    - python: "3.7"
+    - python: "3.8"
+      env:
+        - BUILD_DOCS=true
+        - DEPLOY_PYPI=true
+    - os: windows
+      language: shell
+      env:
+        - PATH=/c/Python38:/c/Python38/Scripts:$PATH
+        - BUILD_WHEEL=true
+      before_install:
+        - choco install python --version 3.8.0
+        - ln -s /c/Python38/python.exe /c/Python38/python3.exe
+    - os: osx
+      osx_image: xcode12
+      language: shell
+      env: BUILD_WHEEL=true
+install:
+  - pip3 install -e .[dev]
+script:
+  - pylint hgp tests
+  - mypy hgp
+  - |
+    coverage run --source=hgp --omit="**/__main__.py" -m pytest tests && \
+    coveralls
+  - |
+    if [[ -n "$BUILD_DOCS" ]]; then
+      make -C docs doctest && \
+      make -C docs linkcheck && \
+      make -C docs html;
+    fi
+deploy:
+  provider: pypi
+  username: "__token__"
+  password:
+    secure: "6CNyyDN6JgzNvmyzn5uwX8swtEAa157fKgyQAgXeILtM1NK7f0QLORLjXdlGlfITGCnf7XVb3cQEndetWjrcxpoXom8QuDCkiDRcIuk4XeKlCI0cBJoXjVS+Ne7FvIi0CHMw5WpE5mclGcKqMHwM02yfMH9VARWv5iUQIpd2TgR4s5OlIAOo5svRd4tiy1DusCvN/RLy02ZJQBKPRraL06x6wYoT/7WkRFwNfG8+YYcgGa9wZjPAaob/Yl1AiKxsh97rVPwyQhV5BBKBMYdU7Y4F7j6gFDPnXT1VEnCRXtbutKIuVsKn8xl7h3XuHSNdFQl2gZwYHNEdprmGuk8IF/eSbsE6+eHHCpjHrWcxAf32yJ7Vi27vY4af112sMw+cySzISJimFgS1sWtqmS6Bg8l3XxlxgY52VrFPd15rKw8G3aqbgLD4vh12RqG6YWsYW/ygAQE2fjVF3v/Wle6/O0pudKMmDB87S+qoZMX4U7EqRSgO2WPuSqvoeHeJUIyuDklsDIUt9/MMn8fVewg4Snisy/2aGE0Gaq5tO257xLIhwIMXyjTn3UxBIt3BB0k6wvm3gIbbS4t8hbjyHqAVdpFiypu7jeIH4PhlKRuFP9UZmMqsKOWX63s68sBOrvnlakNvTXsgE2XgjI3cvzgXKFKod+SoYGjIX3uMDnzW4tQ="
+  on:
+    repo: klittlepage/hgpmatch
+    tags: true
+    branch: master
+    condition: env(DEPLOY_PYPI) IS present
+  cleanup: false
+  skip_existing: true
+  distributions: "sdist bdist_wheel"

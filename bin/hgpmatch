@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+import hgp.match.main as hgp_main
+
+hgp_main.main()
